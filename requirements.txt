@@ -1,0 +1,6 @@
+lxml==4.4.1
+Pillow==6.2.0
+requests==2.22.0
+tqdm==4.36.1
+urllib3==1.25.6
+xmltodict==0.12.0
