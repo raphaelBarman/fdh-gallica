@@ -13,6 +13,5 @@ setup(name='fdh_gallica',
           'pillow',
           'requests',
           'tqdm',
-          'urllib3'
           'xmltodict'
       ])
