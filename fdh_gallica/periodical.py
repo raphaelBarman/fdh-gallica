@@ -1,16 +1,21 @@
-from .base import GallicaObject
-from .document import Document
-from .utils import request_and_parse_urls, request_and_parse, makelist
+import os
+
 import requests
 import xmltodict
-import os
+
+from .base import GallicaObject
+from .document import Document
+from .parallel_process import request_and_parse_urls
+from .utils import makelist, request_and_parse
 
 ISSUES_BASEURL = 'https://gallica.bnf.fr/services/Issues?ark=ark:'
 
 
-class Series(GallicaObject):
+class Periodical(GallicaObject):
+    """Gallica periodical object"""
 
     def issues(self, use_cache=True, processes=4, progress=False):
+        """Find all issues of a periodical, store them in documents"""
         years = self.years_of_issues()
         urls = ["/".join([ISSUES_BASEURL, self.ark, 'date&date=%s' % year])
                 for year in years]
@@ -30,6 +35,7 @@ class Series(GallicaObject):
         return issues
 
     def years_of_issues(self):
+        """Find the different year of the issues"""
         url = "/".join([ISSUES_BASEURL, self.ark, 'date'])
         response = requests.get(url)
         parsed_response = xmltodict.parse(response.content)
@@ -46,6 +52,7 @@ class Series(GallicaObject):
         return self.parse_issues(parsed_response)
 
     def parse_issues(self, parsed_response):
+        """Given an issue creates a document object"""
         try:
             issues = makelist(parsed_response['issues']['issue'])
             return [Document('/'.join([self.authority, issue['@ark']]))
@@ -54,10 +61,11 @@ class Series(GallicaObject):
             print("missing issues keys", parsed_response)
             return []
 
-    def generate_download(self, base_path='', export_images=True, export_ocr=True):
+    def generate_download(self, base_path='', export_images=True, export_ocr=True, verbose=True):
+        """Generate the download urls and paths of all the documents of the periodical"""
         urls_path = []
         years = self.years_of_issues()
-        for year, issues in zip(years, self.issues()):
+        for year, issues in zip(years, self.issues(progress=verbose)):
             year_path = os.path.join(base_path, year)
             urls_path.extend(issues.generate_download(year_path))
         return urls_path

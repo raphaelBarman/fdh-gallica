@@ -1,8 +1,10 @@
-from .base import GallicaObject
-from .utils import makelist
+import os
+
 import requests
 import xmltodict
-import os
+
+from .base import GallicaObject
+from .utils import makelist
 
 OAI_BASEURL = 'https://gallica.bnf.fr/services/OAIRecord?ark=ark:'
 PAGINATION_BASEURL = 'https://gallica.bnf.fr/services/Pagination?ark='
@@ -11,12 +13,14 @@ IIIF_BASEURL = 'https://gallica.bnf.fr/iiif/ark:'
 
 
 class Document(GallicaObject):
+    """Gallica document object"""
 
     def __init__(self, ark):
         GallicaObject.__init__(self, ark)
         self.oai_dict = None
 
     def oai(self):
+        """Retrieve the XML of the OAI information for the document"""
         url = self.oai_url()
         response = requests.get(url)
         parsed_response = xmltodict.parse(response.content)
@@ -27,6 +31,7 @@ class Document(GallicaObject):
         return "/".join([OAI_BASEURL, self.ark])
 
     def iiif_urls(self):
+        """Give all the urls of the IIIF images related to the document"""
         numbers = self.page_numbers()
         urls = [self.iiif_url_for_page(number) for number in numbers]
         return urls
@@ -36,6 +41,7 @@ class Document(GallicaObject):
         return url
 
     def alto_urls(self):
+        """Give the urls of the XML ALTO ocr if it exists"""
         if not self.has_alto():
             raise ValueError("Document does not have OCR")
         numbers = self.page_numbers()
@@ -48,12 +54,8 @@ class Document(GallicaObject):
         url = ALTO_BASEURL % (self.ark_name, page)
         return url
 
-    def alto_for_page(self, page):
-        url = self.alto_url_for_page(page)
-        response = requests.get(url)
-        return response.content
-
     def has_alto(self):
+        """Check if the document has OCR by checking its nqamoyen as explained in the Gallica documentation"""
         if not self.oai_dict:
             self.oai()
         try:
@@ -64,6 +66,7 @@ class Document(GallicaObject):
             return False
 
     def page_numbers(self):
+        """Give a list of the page numbers"""
         pagination_info = self.pagination()
         try:
             pages = makelist(pagination_info['livre']['pages']['page'])
@@ -72,6 +75,7 @@ class Document(GallicaObject):
             return []
 
     def pagination(self, use_cache=True):
+        """Query the pagination API to get page numbers"""
         if hasattr(self, "pagination_response"):
             return self.pagination_response
         url = "".join([PAGINATION_BASEURL, self.ark_name])
@@ -81,6 +85,7 @@ class Document(GallicaObject):
         return parsed_response
 
     def generate_download(self, base_path='', export_images=True, export_ocr=True):
+        """Generate a list of urls for the OAI metadata, IIIF urls and ALTO urls of the document"""
         urls_paths = []
         base_path = os.path.join(base_path, self.ark_name)
         urls_paths.append((self.oai_url(), os.path.join(base_path, self.ark_name + '_oai.xml')))

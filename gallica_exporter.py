@@ -1,11 +1,13 @@
+#!/usr/bin/env python
 import argparse
-import os
-from fdh_gallica import Document, Series, Search
-from fdh_gallica.utils import write_tuple_list, generate_download_for_documents
+from fdh_gallica import Document, Periodical, Search
+from fdh_gallica.utils import write_tuple_list
+from fdh_gallica.parallel_process import generate_download_for_documents
 
 
 if __name__ == '__main__':
-    args_parser = argparse.ArgumentParser("gallica_exporter.py")
+    args_parser = argparse.ArgumentParser("gallica_exporter.py",
+                                          description="Generates a CSV of URLs and paths to the metadata, iiif images and alto OCR for a given document/collection/search.")
     info_type = args_parser.add_mutually_exclusive_group(required=True)
 
     info_type.add_argument('-d',
@@ -13,11 +15,11 @@ if __name__ == '__main__':
                            metavar='document',
                            type=str,
                            help='ark of the document')
-    info_type.add_argument('-c',
-                           '--collection',
-                           metavar='collection',
+    info_type.add_argument('-p',
+                           '--periodical',
+                           metavar='periodical',
                            type=str,
-                           help='ark of the collection')
+                           help='ark of the periodical')
     info_type.add_argument('-s',
                            '--search',
                            metavar='search_term',
@@ -61,11 +63,14 @@ if __name__ == '__main__':
     args_parser.add_argument('--no-ocr',
                              action='store_false',
                              help="Download or not the alto OCR")
-
+    args_parser.add_argument('-q',
+                             '--quiet',
+                             action='store_false',
+                             help="disable console output")
 
     args = args_parser.parse_args()
     doc = args.document
-    collection = args.collection
+    periodical = args.periodical
     search_term = args.search
     doc_type = args.doc_type
     search_field = args.search_field
@@ -74,26 +79,32 @@ if __name__ == '__main__':
     base_dir = args.base_dir
     export_images = args.no_image
     export_ocr = args.no_ocr
+    quiet = args.quiet
     urls_paths = []
+
     if doc:
         document = Document(doc)
         urls_paths = document.generate_download(base_dir, export_images, export_ocr)
-    elif collection:
-        series = Series(collection)
-        urls_paths = series.generate_download(base_dir, export_images, export_ocr)
+    elif periodical:
+        series = Periodical(periodical)
+        urls_paths = series.generate_download(base_dir, export_images, export_ocr, quiet)
     else:
         additional_fields = {search_field[0]: search_field[1]} if search_field else {}
-        search = Search(search_term, doc_type, dc_creator=None, dc_title=None, and_query=True, **additional_fields)
-        search.execute(max_records=max_records, processes=4)
+        search = Search(search_term, doc_type,
+                        dc_creator=None, dc_title=None,
+                        and_query=True, **additional_fields)
+        search.execute(max_records=max_records, processes=4, progress=quiet)
         retry = 0
         while retry < 5 and len(search.failures) > 0:
-            search.retry()
+            search.retry(progress=quiet)
             retry += 1
         docs = search.documents
-        urls_paths, failures = generate_download_for_documents(docs, base_dir, export_images, export_ocr)
+        urls_paths, failures = generate_download_for_documents(docs, base_dir, export_images, export_ocr,
+                                                               progress=quiet)
         retry = 0
         while retry < 5 and len(failures) > 0:
-            urls_paths_addon, failures = generate_download_for_documents(docs, base_dir, export_images, export_ocr)
+            urls_paths_addon, failures = generate_download_for_documents(docs, base_dir, export_images, export_ocr,
+                                                                         progress=quiet)
             retry += 1
             urls_paths.extend(urls_paths_addon)
     write_tuple_list(urls_paths, output_path)

@@ -7,7 +7,7 @@ setup(name='fdh_gallica',
       description='FDH gallica package',
       author='Raphael Barman',
       author_email='raphael.barman@epfl.ch',
-      packages=find_packages('fdh_gallica'),
+      packages=find_packages(),
       install_requires=[
           'lxml',
           'pillow',
