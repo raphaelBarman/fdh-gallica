@@ -7,7 +7,7 @@ from fdh_gallica.parallel_process import generate_download_for_documents
 
 if __name__ == '__main__':
     args_parser = argparse.ArgumentParser("gallica_exporter.py",
-                                          description="Generates a CSV of URLs and paths to the metadata, iiif images and alto OCR for a given document/collection/search.")
+                                          description="Generates a CSV of URLs and paths to the metadata, iiif images and alto OCR for a given document/periodical/search.")
     info_type = args_parser.add_mutually_exclusive_group(required=True)
 
     info_type.add_argument('-d',

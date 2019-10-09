@@ -19,13 +19,16 @@ class Document(GallicaObject):
         GallicaObject.__init__(self, ark)
         self.oai_dict = None
 
-    def oai(self):
+    def oai(self, parse_xml=True):
         """Retrieve the XML of the OAI information for the document"""
         url = self.oai_url()
         response = requests.get(url)
         parsed_response = xmltodict.parse(response.content)
         self.oai_dict = parsed_response
-        return parsed_response
+        if parse_xml:
+            return parsed_response
+        else:
+            return response.content
 
     def oai_url(self):
         return "/".join([OAI_BASEURL, self.ark])
