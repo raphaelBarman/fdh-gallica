@@ -1,37 +1,5 @@
 import requests
 import xmltodict
-from .parallel_process import parallel_process
-
-
-def iiif_urls_for_documents(documents, processes=4, progress=True):
-    """Generates all the iiif urls for the given Gallica document object"""
-    return parallel_process(_iiif_urls, documents, processes, progress)
-
-
-def _iiif_urls(document):
-    """Wrapper of the Document.iiif_urls function to work in parallel"""
-    try:
-        return (document, document.iiif_urls()), None
-    except:
-        return None, document
-
-
-def generate_download_for_documents(documents, base_dir,
-                                    export_images=True, export_ocr=True,
-                                    processes=4, progress=True):
-    """Generate download list of urls and paths for a list of Gallica document objects"""
-    documents = [(document, base_dir, export_images, export_ocr) for
-                 document in documents]
-    return parallel_process(_urls_paths, documents, processes, progress)
-
-
-def _urls_paths(document):
-    """Wrapper for Document.generate_download to work in parallel"""
-    document, base_dir, export_images, export_ocr = document
-    try:
-        return document.generate_download(base_dir, export_images, export_ocr), None
-    except:
-        return None, document
 
 
 def request_and_parse(xml_url):
