@@ -65,7 +65,9 @@ class Periodical(GallicaObject):
         """Generate the download urls and paths of all the documents of the periodical"""
         urls_path = []
         years = self.years_of_issues()
-        for year, issues in zip(years, self.issues(progress=verbose)):
+        for year in years:
+            issues = self.issues_per_year(year)
             year_path = os.path.join(base_path, year)
-            urls_path.extend(issues.generate_download(year_path))
+            for issue in issues:
+                urls_path.extend(issue.generate_download(year_path, export_images, export_ocr))
         return urls_path
